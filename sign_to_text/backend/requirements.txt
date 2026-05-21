@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+numpy
+mediapipe
+opencv-contrib-python-headless
+aiofiles
+httpx

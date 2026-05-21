@@ -18,6 +18,20 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+      },
+      '/videos': {
+        target: 'http://161.118.197.176:8080',
+        changeOrigin: true,
+      },
+      '/skeleton_videos': {
+        target: 'http://134.185.92.120:8000',
+        changeOrigin: true,
+      },
+      '/ws-match': {
+        target: 'ws://localhost:8005',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/ws-match/, '/ws/match')
       }
     }
   }

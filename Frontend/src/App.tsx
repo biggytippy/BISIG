@@ -56,6 +56,7 @@ import {
 import dictionaryData from "./data/fsl_dictionary.json";
 import verifiedSigns from "./data/verified_signs.json";
 import SkeletonPlayer from "./components/SkeletonPlayer";
+import SignToText from "./components/SignToText";
 import { TiltCard, BackgroundOrbs } from "./components/TiltCard";
 import { TEAM_MEMBERS, FEATURES } from "./constants";
 
@@ -880,8 +881,8 @@ const LandingPage = ({ setPage }: any) => {
   );
 };
 
-const TranslatorPage = ({ addToHistory }: any) => {
-  const [activeTab, setActiveTab] = useState("t2s");
+const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
+  const [activeTab, setActiveTab] = useState<string>("t2s");
   const [inputText, setInputText] = useState("");
   const [tokens, setTokens] = useState<any[]>([]); // Array<{ text: string, isPill: boolean }>
   const [isTranslating, setIsTranslating] = useState(false);
@@ -1299,427 +1300,436 @@ const TranslatorPage = ({ addToHistory }: any) => {
       style={{ padding: "2rem 0" }}
     >
       <div className="grid grid-12 gap-8">
-        <div className="col-6" style={{ gridColumn: "span 5" }}>
-          <motion.div
-            initial={{ x: -50 }}
-            animate={{ x: 0 }}
-            className="card h-full flex-col"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <div className="switcher-pill" style={{ margin: 0 }}>
-                <button
-                  className={`btn ghost ${activeTab === "t2s" ? "active" : ""}`}
-                  onClick={() => setActiveTab("t2s")}
-                >
-                  Text-to-Sign
-                </button>
-                <button
-                  className={`btn ghost ${activeTab === "s2t" ? "active" : ""}`}
-                  onClick={() => setActiveTab("s2t")}
-                >
-                  Sign-to-Text
-                </button>
-              </div>
-              <button
-                className={`btn ghost ${isListening ? "mic-active" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleListening();
-                }}
-                style={{
-                  padding: "0.75rem",
-                  borderRadius: "50%",
-                  background: isListening
-                    ? "var(--accent)"
-                    : "rgba(255,255,255,0.05)",
-                  color: isListening ? "black" : "white",
-                  boxShadow: isListening ? "0 0 15px var(--accent)" : "none",
-                  transition: "all 0.3s ease",
-                  zIndex: 10,
-                }}
-                title={isListening ? "Stop Listening" : "Start Voice Input"}
+        {activeTab === "t2s" ? (
+          <>
+            <div className="col-6" style={{ gridColumn: "span 5" }}>
+              <motion.div
+                initial={{ x: -50 }}
+                animate={{ x: 0 }}
+                className="card h-full flex-col"
               >
-                <Mic size={22} />
-              </button>
-            </div>
-            {activeTab === "t2s" ? (
-              <div className="flex-col gap-4 flex-1">
-                <div
-                  className="pop-input"
-                  style={{
-                    flex: 1,
-                    minHeight: "150px",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignContent: "flex-start",
-                    gap: "8px",
-                    padding: "1rem",
-                    cursor: "text",
-                    position: "relative",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "none",
-                  }}
-                  onClick={() => document.getElementById("hiddenInput")?.focus()}
-                >
-                  <AnimatePresence>
-                    {tokens.map((token, idx) =>
-                      token.isPill ? (
-                        <motion.div
-                          key={idx}
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0.8, opacity: 0 }}
-                          className="badge accent"
-                          style={{
-                            padding: "0.5rem 1rem",
-                            borderRadius: "12px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            background: "rgba(34, 197, 94, 0.15)",
-                            border: "2px solid var(--accent)",
-                            boxShadow: "0 0 15px rgba(34, 197, 94, 0.3)",
-                            color: "var(--accent)",
-                            fontWeight: 800,
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          {token.text}
-                          <X
-                            size={14}
-                            style={{ cursor: "pointer" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTokens(tokens.filter((_, i) => i !== idx));
-                            }}
-                          />
-                        </motion.div>
-                      ) : (
-                        <span
-                          key={idx}
-                          style={{
-                            padding: "0.5rem 0",
-                            fontSize: "1.5rem",
-                            fontWeight: 700,
-                            color: "white",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          {token.text}
-                        </span>
-                      ),
-                    )}
-                  </AnimatePresence>
-                  <textarea
-                    id="hiddenInput"
+                <div className="flex justify-between items-center mb-6">
+                  <div className="switcher-pill" style={{ margin: 0 }}>
+                    <button
+                      className="btn ghost active"
+                      onClick={() => setActiveTab("t2s")}
+                    >
+                      Text-to-Sign
+                    </button>
+                    <button
+                      className="btn ghost"
+                      onClick={() => setActiveTab("s2t")}
+                    >
+                      Sign-to-Text
+                    </button>
+                  </div>
+                  <button
+                    className={`btn ghost ${isListening ? "mic-active" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleListening();
+                    }}
+                    style={{
+                      padding: "0.75rem",
+                      borderRadius: "50%",
+                      background: isListening
+                        ? "var(--accent)"
+                        : "rgba(255,255,255,0.05)",
+                      color: isListening ? "black" : "white",
+                      boxShadow: isListening ? "0 0 15px var(--accent)" : "none",
+                      transition: "all 0.3s ease",
+                      zIndex: 10,
+                    }}
+                    title={isListening ? "Stop Listening" : "Start Voice Input"}
+                  >
+                    <Mic size={22} />
+                  </button>
+                </div>
+                <div className="flex-col gap-4 flex-1">
+                  <div
+                    className="pop-input"
                     style={{
                       flex: 1,
-                      minWidth: "150px",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      color: "white",
-                      fontSize: "1.5rem",
-                      fontWeight: 700,
-                      resize: "none",
-                      padding: 0,
-                      height: "40px",
-                    }}
-                    placeholder={tokens.length === 0 ? "Enter phrase..." : ""}
-                    value={inputText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
-                <div className="grid grid-2 gap-4">
-                  <div className="settings-group">
-                    <label className="settings-label">LANGUAGE</label>
-                    <select
-                      value={lang}
-                      onChange={(e) => setLang(e.target.value)}
-                    >
-                      <option value="fsl">FSL (Filipino)</option>
-                      <option value="asl">ASL (American)</option>
-                    </select>
-                  </div>
-                  <div className="settings-group">
-                    <label className="settings-label">OUTPUT FORMAT</label>
-                    <select
-                      value={format}
-                      onChange={(e) => setFormat(e.target.value)}
-                    >
-                      <option value="skeleton">Skeleton Data</option>
-                      <option value="video">Original Video</option>
-                      <option value="full_skeleton_video">
-                        Combined Video
-                      </option>
-                    </select>
-                  </div>
-                  <div
-                    className="settings-group"
-                    style={{
-                      gridColumn: "span 2",
+                      minHeight: "150px",
                       display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
+                      flexWrap: "wrap",
+                      alignContent: "flex-start",
+                      gap: "8px",
+                      padding: "1rem",
+                      cursor: "text",
+                      position: "relative",
+                      background: "rgba(255,255,255,0.02)",
+                      border: "none",
                     }}
+                    onClick={() => document.getElementById("hiddenInput")?.focus()}
                   >
-                    <input
-                      type="checkbox"
-                      id="showRef"
-                      checked={showReference}
-                      onChange={(e) => setShowReference(e.target.checked)}
+                    <AnimatePresence>
+                      {tokens.map((token, idx) =>
+                        token.isPill ? (
+                          <motion.div
+                            key={idx}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="badge accent"
+                            style={{
+                              padding: "0.5rem 1rem",
+                              borderRadius: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              background: "rgba(34, 197, 94, 0.15)",
+                              border: "2px solid var(--accent)",
+                              boxShadow: "0 0 15px rgba(34, 197, 94, 0.3)",
+                              color: "var(--accent)",
+                              fontWeight: 800,
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            {token.text}
+                            <X
+                              size={14}
+                              style={{ cursor: "pointer" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTokens(tokens.filter((_, i) => i !== idx));
+                              }}
+                            />
+                          </motion.div>
+                        ) : (
+                          <span
+                            key={idx}
+                            style={{
+                              padding: "0.5rem 0",
+                              fontSize: "1.5rem",
+                              fontWeight: 700,
+                              color: "white",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {token.text}
+                          </span>
+                        ),
+                      )}
+                    </AnimatePresence>
+                    <textarea
+                      id="hiddenInput"
                       style={{
-                        width: "20px",
-                        height: "20px",
-                        cursor: "pointer",
-                        accentColor: "var(--accent)",
+                        flex: 1,
+                        minWidth: "150px",
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        color: "white",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        resize: "none",
+                        padding: 0,
+                        height: "40px",
                       }}
+                      placeholder={tokens.length === 0 ? "Enter phrase..." : ""}
+                      value={inputText}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
                     />
-                    <label
-                      htmlFor="showRef"
-                      className="settings-label"
-                      style={{ marginBottom: 0, cursor: "pointer" }}
+                  </div>
+                  <div className="grid grid-2 gap-4">
+                    <div className="settings-group">
+                      <label className="settings-label">LANGUAGE</label>
+                      <select
+                        value={lang}
+                        onChange={(e) => setLang(e.target.value)}
+                      >
+                        <option value="fsl">FSL (Filipino)</option>
+                        <option value="asl">ASL (American)</option>
+                      </select>
+                    </div>
+                    <div className="settings-group">
+                      <label className="settings-label">OUTPUT FORMAT</label>
+                      <select
+                        value={format}
+                        onChange={(e) => setFormat(e.target.value)}
+                      >
+                        <option value="skeleton">Skeleton Data</option>
+                        <option value="video">Original Video</option>
+                        <option value="full_skeleton_video">
+                          Combined Video
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      className="settings-group"
+                      style={{
+                        gridColumn: "span 2",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
                     >
-                      SHOW HUMAN REFERENCE VIDEO
-                    </label>
+                      <input
+                        type="checkbox"
+                        id="showRef"
+                        checked={showReference}
+                        onChange={(e) => setShowReference(e.target.checked)}
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          cursor: "pointer",
+                          accentColor: "var(--accent)",
+                        }}
+                      />
+                      <label
+                        htmlFor="showRef"
+                        className="settings-label"
+                        style={{ marginBottom: 0, cursor: "pointer" }}
+                      >
+                        SHOW HUMAN REFERENCE VIDEO
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="btn primary flex-1"
+                      onClick={translateText}
+                      disabled={isTranslating}
+                    >
+                      {isTranslating ? (
+                        "Working..."
+                      ) : (
+                        <>
+                          <Play size={18} /> TRANSLATE
+                        </>
+                      )}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="btn secondary flex-1"
+                      onClick={startRealtime}
+                    >
+                      <Activity size={18} /> LIVE (WS)
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="btn ghost"
+                      onClick={stopAll}
+                    >
+                      <StopCircle size={18} /> STOP
+                    </motion.button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn primary flex-1"
-                    onClick={translateText}
-                    disabled={isTranslating}
-                  >
-                    {isTranslating ? (
-                      "Working..."
-                    ) : (
-                      <>
-                        <Play size={18} /> TRANSLATE
-                      </>
-                    )}
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn secondary flex-1"
-                    onClick={startRealtime}
-                  >
-                    <Activity size={18} /> LIVE (WS)
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn ghost"
-                    onClick={stopAll}
-                  >
-                    <StopCircle size={18} /> STOP
-                  </motion.button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex-col items-center justify-center text-center p-8">
-                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                  <Camera size={64} className="opacity-20" />
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                    <Shield size={24} className="text-accent" />
+                <div
+                  className="mt-6 pt-4 flex flex-col gap-4"
+                  style={{
+                    borderTop: "1px solid var(--border)",
+                  }}
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <span style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 800 }}>
+                        {suggestions.length > 0 ? "DID YOU MEAN?" : "QUICK STARTERS"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(suggestions.length > 0
+                        ? suggestions
+                        : [
+                            "Hello",
+                            "How are you",
+                            "Thank you",
+                            "Please",
+                            "I love you",
+                          ]
+                      ).map((item: any) => {
+                        const word = typeof item === "string" ? item : item.word;
+                        const isExact = typeof item === "object" && item.isExact;
+                        return (
+                          <button
+                            key={word}
+                            className="btn ghost"
+                            style={{
+                              fontSize: "0.7rem",
+                              padding: "0.4rem 0.9rem",
+                              border: isExact
+                                ? "2px solid var(--accent)"
+                                : suggestions.length > 0
+                                  ? "1px solid var(--accent)"
+                                  : "1px solid var(--border)",
+                              background: isExact
+                                ? "rgba(34, 197, 94, 0.15)"
+                                : suggestions.length > 0
+                                  ? "rgba(34, 197, 94, 0.05)"
+                                  : "rgba(255,255,255,0.02)",
+                              color:
+                                suggestions.length > 0
+                                  ? "var(--accent)"
+                                  : "var(--fg)",
+                              borderRadius: "20px",
+                              boxShadow: isExact
+                                ? "0 0 15px rgba(34, 197, 94, 0.3)"
+                                : "none",
+                              fontWeight: isExact ? 800 : 500,
+                              transition: "all 0.3s ease",
+                            }}
+                            onClick={() => {
+                              commitSuggestion(word);
+                            }}
+                          >
+                            {word}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-                <h3 style={{ fontWeight: 800, marginBottom: '0.5rem' }}>SIGN-TO-TEXT <span className="badge secondary" style={{ verticalAlign: 'middle', marginLeft: '0.5rem' }}>RESEARCH</span></h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--muted)", maxWidth: '300px', margin: '0 auto 2rem' }}>
-                  Our AI vision model is currently in a university-led research phase.
-                </p>
-                <button className="btn ghost" style={{ gap: '10px', opacity: 0.5, cursor: 'not-allowed' }}>
-                  <PlayCircle size={20} /> START RECORDING
-                </button>
-              </div>
-            )}
-              <div
-                className="mt-6 pt-4 flex flex-col gap-4"
+              </motion.div>
+            </div>
+            <div className="col-6" style={{ gridColumn: "span 7" }}>
+              <motion.div
+                initial={{ x: 50 }}
+                animate={{ x: 0 }}
+                className="card featured h-full"
                 style={{
-                  borderTop: "1px solid var(--border)",
+                  padding: "1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: 'relative'
                 }}
               >
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <span style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 800 }}>
-                      {suggestions.length > 0 ? "DID YOU MEAN?" : "QUICK STARTERS"}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(suggestions.length > 0
-                      ? suggestions
-                      : [
-                          "Hello",
-                          "How are you",
-                          "Thank you",
-                          "Please",
-                          "I love you",
-                        ]
-                    ).map((item: any) => {
-                      const word = typeof item === "string" ? item : item.word;
-                      const isExact = typeof item === "object" && item.isExact;
-                      return (
-                        <button
-                          key={word}
-                          className="btn ghost"
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '2rem', 
+                  right: '2rem', 
+                  zIndex: 100,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: 'rgba(0,0,0,0.5)',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    background: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? 'var(--accent)' : status.includes('Listening') ? '#3b82f6' : '#ef4444',
+                    boxShadow: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? '0 0 10px var(--accent)' : status.includes('Listening') ? '0 0 10px #3b82f6' : 'none',
+                    transition: 'all 0.3s ease'
+                  }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '1px' }}>
+                    {status.includes('Connected') ? 'LIVE READY' : status.toUpperCase()}
+                  </span>
+                </div>
+                <div className="view-port" style={{ flex: 1, background: "#000" }}>
+                  <SkeletonPlayer
+                    frames={frames}
+                    isPlaying={
+                      isPlaying &&
+                      (format === "skeleton" || format === "full_skeleton_video")
+                    }
+                    onEnded={() => setStatus("Finished")}
+                  />
+                  <video
+                    ref={videoRef}
+                    className={format === "video" ? "" : "hidden"}
+                    autoPlay
+                    onEnded={handleVideoEnd}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "top center",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                  <AnimatePresence>
+                    {previewUrl &&
+                      showReference &&
+                      (format === "skeleton" ||
+                        format === "full_skeleton_video") && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
                           style={{
-                            fontSize: "0.7rem",
-                            padding: "0.4rem 0.9rem",
-                            border: isExact
-                              ? "2px solid var(--accent)"
-                              : suggestions.length > 0
-                                ? "1px solid var(--accent)"
-                                : "1px solid var(--border)",
-                            background: isExact
-                              ? "rgba(34, 197, 94, 0.15)"
-                              : suggestions.length > 0
-                                ? "rgba(34, 197, 94, 0.05)"
-                                : "rgba(255,255,255,0.02)",
-                            color:
-                              suggestions.length > 0
-                                ? "var(--accent)"
-                                : "var(--fg)",
-                            borderRadius: "20px",
-                            boxShadow: isExact
-                              ? "0 0 15px rgba(34, 197, 94, 0.3)"
-                              : "none",
-                            fontWeight: isExact ? 800 : 500,
-                            transition: "all 0.3s ease",
-                          }}
-                          onClick={() => {
-                            commitSuggestion(word);
+                            position: "absolute",
+                            bottom: "1rem",
+                            right: "1rem",
+                            width: "200px",
+                            borderRadius: "12px",
+                            border: "2px solid var(--accent)",
+                            overflow: "hidden",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.8)",
+                            zIndex: 10,
                           }}
                         >
-                          {word}
-                        </button>
-                      );
-                    })}
+                          <div
+                            style={{
+                              padding: "4px",
+                              background: "var(--accent)",
+                              fontSize: "0.6rem",
+                              color: "black",
+                              fontWeight: 900,
+                              textAlign: "center",
+                            }}
+                          >
+                            HUMAN REFERENCE
+                          </div>
+                          <video
+                            src={previewUrl}
+                            autoPlay
+                            loop
+                            muted
+                            style={{ width: "100%", display: "block" }}
+                          />
+                        </motion.div>
+                      )}
+                  </AnimatePresence>
+                </div>
+                <div className="flex justify-end items-center mt-4 px-2">
+                  <div className="badge accent">
+                    {format === "skeleton"
+                      ? "AI SKELETON"
+                      : format === "video"
+                        ? "HUMAN VIDEO"
+                        : "COMBINED VIEW"}
                   </div>
                 </div>
+              </motion.div>
+            </div>
+          </>
+        ) : (
+          <SignToText
+            userId={user ? user.userId : null}
+            onNewHistoryEntry={() => user && fetchHistory(user.userId)}
+            renderTabSwitcher={() => (
+              <div className="flex justify-between items-center mb-6">
+                <div className="switcher-pill" style={{ margin: 0 }}>
+                  <button
+                    className="btn ghost"
+                    onClick={() => setActiveTab("t2s")}
+                  >
+                    Text-to-Sign
+                  </button>
+                  <button
+                    className="btn ghost active"
+                    onClick={() => setActiveTab("s2t")}
+                  >
+                    Sign-to-Text
+                  </button>
+                </div>
               </div>
-          </motion.div>
-        </div>
-        <div className="col-6" style={{ gridColumn: "span 7" }}>
-          <motion.div
-            initial={{ x: 50 }}
-            animate={{ x: 0 }}
-            className="card featured h-full"
-            style={{
-              padding: "1rem",
-              display: "flex",
-              flexDirection: "column",
-              position: 'relative'
-            }}
-          >
-            <div style={{ 
-              position: 'absolute', 
-              top: '2rem', 
-              right: '2rem', 
-              zIndex: 100,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(0,0,0,0.5)',
-              padding: '0.5rem 1rem',
-              borderRadius: '20px',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                borderRadius: '50%', 
-                background: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? 'var(--accent)' : status.includes('Listening') ? '#3b82f6' : '#ef4444',
-                boxShadow: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? '0 0 10px var(--accent)' : status.includes('Listening') ? '0 0 10px #3b82f6' : 'none',
-                transition: 'all 0.3s ease'
-              }} />
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '1px' }}>
-                {status.includes('Connected') ? 'LIVE READY' : status.toUpperCase()}
-              </span>
-            </div>
-            <div className="view-port" style={{ flex: 1, background: "#000" }}>
-              <SkeletonPlayer
-                frames={frames}
-                isPlaying={
-                  isPlaying &&
-                  (format === "skeleton" || format === "full_skeleton_video")
-                }
-                onEnded={() => setStatus("Finished")}
-              />
-              <video
-                ref={videoRef}
-                className={format === "video" ? "" : "hidden"}
-                autoPlay
-                onEnded={handleVideoEnd}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "top center",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                }}
-              />
-              <AnimatePresence>
-                {previewUrl &&
-                  showReference &&
-                  (format === "skeleton" ||
-                    format === "full_skeleton_video") && (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      style={{
-                        position: "absolute",
-                        bottom: "1rem",
-                        right: "1rem",
-                        width: "200px",
-                        borderRadius: "12px",
-                        border: "2px solid var(--accent)",
-                        overflow: "hidden",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.8)",
-                        zIndex: 10,
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: "4px",
-                          background: "var(--accent)",
-                          fontSize: "0.6rem",
-                          color: "black",
-                          fontWeight: 900,
-                          textAlign: "center",
-                        }}
-                      >
-                        HUMAN REFERENCE
-                      </div>
-                      <video
-                        src={previewUrl}
-                        autoPlay
-                        loop
-                        muted
-                        style={{ width: "100%", display: "block" }}
-                      />
-                    </motion.div>
-                  )}
-              </AnimatePresence>
-            </div>
-            <div className="flex justify-end items-center mt-4 px-2">
-              <div className="badge accent">
-                {format === "skeleton"
-                  ? "AI SKELETON"
-                  : format === "video"
-                    ? "HUMAN VIDEO"
-                    : "COMBINED VIEW"}
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            )}
+          />
+        )}
       </div>
     </motion.div>
   );
@@ -2267,6 +2277,72 @@ const DirectoryPage = () => {
           </div>
         </div>
       </div>
+
+      <div style={{ marginTop: "6rem", borderTop: "1px solid var(--border)", paddingTop: "4rem" }}>
+        <h2 style={{ fontSize: "1.8rem", fontWeight: 800, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <Globe size={28} className="text-accent" />
+          Trusted External ASL Resources
+        </h2>
+        
+        <div className="dictionary-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+          <TiltCard style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>Gallaudet University ASL Connect</h3>
+              <ExternalLink size={16} className="text-accent" />
+            </div>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, lineHeight: "1.6" }}>
+              Comprehensive courses and learning materials from Gallaudet University, the world's premier institution for Deaf education.
+            </p>
+            <a href="https://gallaudet.edu/asl-connect/" target="_blank" rel="noopener noreferrer" className="btn ghost" style={{ marginTop: "auto", fontSize: "0.8rem", padding: "0.5rem" }}>
+              Visit Site
+            </a>
+          </TiltCard>
+
+          <TiltCard style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>National Association of the Deaf</h3>
+              <ExternalLink size={16} className="text-accent" />
+            </div>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, lineHeight: "1.6" }}>
+              Authoritative resources on American Sign Language, Deaf culture, language rights, and advocacy.
+            </p>
+            <a href="https://nad.org/resources/american-sign-language/" target="_blank" rel="noopener noreferrer" className="btn ghost" style={{ marginTop: "auto", fontSize: "0.8rem", padding: "0.5rem" }}>
+              Visit Site
+            </a>
+          </TiltCard>
+
+          <TiltCard style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>Lifeprint ASL University</h3>
+              <ExternalLink size={16} className="text-accent" />
+            </div>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, lineHeight: "1.6" }}>
+              Extensive ASL lessons, dictionary references, and high-quality educational material from Dr. Bill Vicars.
+            </p>
+            <a href="https://lifeprint.com/" target="_blank" rel="noopener noreferrer" className="btn ghost" style={{ marginTop: "auto", fontSize: "0.8rem", padding: "0.5rem" }}>
+              Visit Site
+            </a>
+          </TiltCard>
+
+          <TiltCard style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>INC Sign Language</h3>
+              <ExternalLink size={16} className="text-accent" />
+            </div>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, lineHeight: "1.6" }}>
+              Inclusive sign language resources and application provided by the Christian Era Broadcasting Service International.
+            </p>
+            <div className="flex gap-2" style={{ marginTop: "auto" }}>
+              <a href="https://signlanguage.iglesianicristo.net/" target="_blank" rel="noopener noreferrer" className="btn ghost flex-1" style={{ fontSize: "0.8rem", padding: "0.5rem" }}>
+                Web
+              </a>
+              <a href="https://play.google.com/store/apps/details?id=org.iglesianicristo.cfo.csd.incsignlanguageapp" target="_blank" rel="noopener noreferrer" className="btn ghost flex-1" style={{ fontSize: "0.8rem", padding: "0.5rem" }}>
+                Android
+              </a>
+            </div>
+          </TiltCard>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -2759,7 +2835,11 @@ const App = () => {
           >
             {page === "home" && <LandingPage setPage={setPage} />}
             {page === "translator" && (
-              <TranslatorPage addToHistory={addToHistory} />
+              <TranslatorPage 
+                addToHistory={addToHistory} 
+                user={user} 
+                fetchHistory={fetchHistory} 
+              />
             )}
             {page === "learn" && <DictionaryPage />}
             {page === "directory" && <DirectoryPage />}
