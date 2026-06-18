@@ -33,8 +33,10 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
   const [wsStatus, setWsStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [isInIframe, setIsInIframe] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [transcripts, setTranscripts] = useState<{ word: string; time: string; confidence: number }[]>([]);
+  const [transcripts, setTranscripts] = useState<{ word: string; time: string; confidence: number; method?: string }[]>([]);
   const [handsVisible, setHandsVisible] = useState<boolean>(true);
+  const [colabUrl, setColabUrl] = useState<string>("");
+  const [useLlm, setUseLlm] = useState<boolean>(false);
   const [liveTrace, setLiveTrace] = useState<{ candidate: string | null; distance: number; threshold: number } | null>(null);
   const [showTips, setShowTips] = useState<boolean>(false);
 
@@ -49,6 +51,29 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
   const wsRef = useRef<WebSocket | null>(null);
   const handsVisibleRef = useRef<boolean>(true);
   const lastHandSeenRef = useRef<number>(Date.now());
+  const useLlmRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    useLlmRef.current = useLlm;
+  }, [useLlm]);
+
+  const captureFrame = () => {
+    if (!canvasRef.current) return null;
+    const offscreen = document.createElement("canvas");
+    offscreen.width = 320;
+    offscreen.height = 240;
+    const octx = offscreen.getContext("2d");
+    if (!octx) return null;
+    // Draw the video directly to avoid skeleton overlays in the LLM input
+    if (videoRef.current) {
+        octx.save();
+        octx.translate(offscreen.width, 0);
+        octx.scale(-1, 1);
+        octx.drawImage(videoRef.current, 0, 0, offscreen.width, offscreen.height);
+        octx.restore();
+    }
+    return offscreen.toDataURL("image/jpeg", 0.5);
+  };
 
   useEffect(() => {
     setIsInIframe(window.self !== window.top);
@@ -115,14 +140,20 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
         
         // Send coordinates to WebSocket for matching
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          const frameData: any = {
+            pose: results.poseLandmarks || null,
+            left_hand: results.leftHandLandmarks || null,
+            right_hand: results.rightHandLandmarks || null,
+            face: results.faceLandmarks || null
+          };
+
+          if (useLlmRef.current) {
+            frameData.image = captureFrame();
+          }
+
           wsRef.current.send(JSON.stringify({
             type: "frame",
-            frame: {
-              pose: results.poseLandmarks || null,
-              left_hand: results.leftHandLandmarks || null,
-              right_hand: results.rightHandLandmarks || null,
-              face: results.faceLandmarks || null
-            }
+            frame: frameData
           }));
         }
       });
@@ -295,12 +326,16 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
       
       ws.onopen = () => {
         setWsStatus("connected");
-        ws.send(JSON.stringify({ type: "config", lang, threshold }));
+        ws.send(JSON.stringify({ type: "config", lang, threshold, colabUrl, useLlm }));
       };
       
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "trace") {
+        if (data.type === "config_ack") {
+          if (data.use_llm !== undefined) {
+            setUseLlm(data.use_llm);
+          }
+        } else if (data.type === "trace") {
           setLiveTrace({
             candidate: data.candidate,
             distance: data.distance,
@@ -309,9 +344,10 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
         } else if (data.type === "match") {
           const newWord = data.word;
           const confidence = data.confidence;
+          const method = data.method;
           const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           
-          setTranscripts((prev) => [{ word: newWord, time, confidence }, ...prev]);
+          setTranscripts((prev) => [{ word: newWord, time, confidence, method }, ...prev]);
           
           // Log history to API if user is logged in
           if (userId) {
@@ -346,9 +382,9 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
   // Sync config options with the websocket server
   useEffect(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "config", lang, threshold }));
+      wsRef.current.send(JSON.stringify({ type: "config", lang, threshold, colabUrl, useLlm }));
     }
-  }, [lang, threshold]);
+  }, [lang, threshold, colabUrl, useLlm]);
 
   const stopTracking = () => {
     if (animationFrameRef.current) {
@@ -481,6 +517,36 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
           {status === "active" && (
             <div className="flex-col gap-4 flex-1" style={{ display: "flex" }}>
               <div className="flex-col gap-2" style={{ display: "flex" }}>
+                <div className="flex justify-between items-center" style={{ display: "flex" }}>
+                   <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--muted)" }}>LLM ENHANCED MODE</label>
+                   <div 
+                      className={`badge ${useLlm ? 'accent' : ''}`} 
+                      style={{ cursor: "pointer", opacity: useLlm ? 1 : 0.5 }}
+                      onClick={() => setUseLlm(!useLlm)}
+                   >
+                     {useLlm ? "ENABLED" : "DISABLED"}
+                   </div>
+                </div>
+                {useLlm && (
+                  <input 
+                    type="text" 
+                    placeholder="Paste Colab Tunnel URL here..." 
+                    value={colabUrl}
+                    onChange={(e) => setColabUrl(e.target.value)}
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--rd-sm)",
+                      padding: "0.4rem 0.8rem",
+                      fontSize: "0.75rem",
+                      color: "white",
+                      width: "100%"
+                    }}
+                  />
+                )}
+              </div>
+
+              <div className="flex-col gap-2" style={{ display: "flex" }}>
                 <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--muted)" }}>TARGET DICTIONARY</label>
                 <div className="switcher-pill" style={{ margin: 0, width: "100%" }}>
                   <button
@@ -599,7 +665,7 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
                               {t.word.toUpperCase()}
                             </span>
                             <span style={{ fontSize: "0.65rem", color: "var(--muted)" }}>
-                              Confidence: {Math.round(t.confidence * 100)}%
+                              Confidence: {Math.round(t.confidence * 100)}% {t.method && `| Method: ${t.method.toUpperCase()}`}
                             </span>
                           </div>
                           <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>{t.time}</span>
@@ -739,12 +805,12 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
                   Word: <span style={{ color: "#38bdf8", fontWeight: 700 }}>{liveTrace.candidate.toUpperCase()}</span>
                 </div>
                 <div>
-                  Distance: <span style={{ color: liveTrace.distance <= liveTrace.threshold ? "#4ade80" : "#f87171", fontWeight: 700 }}>
-                    {liveTrace.distance.toFixed(4)}
+                  Distance: <span style={{ color: (liveTrace.distance ?? 0) <= (liveTrace.threshold ?? 0.3) ? "#4ade80" : "#f87171", fontWeight: 700 }}>
+                    {(liveTrace.distance ?? 0).toFixed(4)}
                   </span>
                 </div>
                 <div>
-                  Threshold: <span style={{ color: "var(--muted)" }}>{liveTrace.threshold.toFixed(2)}</span>
+                  Threshold: <span style={{ color: "var(--muted)" }}>{(liveTrace.threshold ?? 0.3).toFixed(2)}</span>
                 </div>
               </div>
             )}

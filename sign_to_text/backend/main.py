@@ -1,10 +1,95 @@
 import os
+import json
 import asyncio
+import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from matcher import SkeletonMatcher
+from qwen_matcher import QwenMatcher
 
-app = FastAPI(title="BISIG Sign to Text Matcher API")
+# URL Persistence
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "colab_config.json")
+
+def get_persisted_url():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                data = json.load(f)
+                return data.get("colab_url")
+        except:
+            return None
+    return None
+
+def save_persisted_url(url):
+    with open(CONFIG_FILE, "w") as f:
+        json.dump({"colab_url": url}, f)
+
+def has_hand_activity(frames):
+    """
+    Detects dynamic hand movement. Returns True if hands are moving 
+    significantly, not just present.
+    """
+    if len(frames) < 10:
+        return False
+        
+    wrist_positions = []
+    for f in frames:
+        # We track the wrist (landmark 0) to detect general hand movement
+        rh = f.get("right_hand")
+        lh = f.get("left_hand")
+        
+        pos = []
+        if rh and len(rh) > 0:
+            pos.append((rh[0]['x'], rh[0]['y']))
+        if lh and len(lh) > 0:
+            pos.append((lh[0]['x'], lh[0]['y']))
+        
+        if pos:
+            wrist_positions.append(pos)
+
+    if len(wrist_positions) < 5:
+        return False
+
+    # Check for movement: calculate the spread of wrist positions
+    # If the hand stays in the same 2% area of the screen, it's "idle"
+    xs = [p[0][0] for p in wrist_positions]
+    ys = [p[0][1] for p in wrist_positions]
+    
+    movement_x = max(xs) - min(xs)
+    movement_y = max(ys) - min(ys)
+    
+    # Threshold: 0.05 (5% of screen movement) is a decent "signing" threshold
+    return movement_x > 0.04 or movement_y > 0.04
+
+qwen_matcher = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global qwen_matcher
+    
+    print("\n" + "="*45)
+    print("      BISIG AI VISION INTERFACE")
+    print("="*45)
+    
+    url = get_persisted_url()
+    
+    if url:
+        print(f"Current Vision Server: {url}")
+        change = input("Press [Enter] to keep, or type NEW URL: ").strip()
+        if change:
+            url = change
+            save_persisted_url(url)
+    else:
+        while not url:
+            url = input("Enter Vision Server (Colab) URL: ").strip()
+        save_persisted_url(url)
+    
+    print(f"\nSTATUS: Initializing with Vision Server @ {url}")
+    qwen_matcher = QwenMatcher(url)
+    print("="*45 + "\n")
+    yield
+
+app = FastAPI(title="BISIG AI Vision Sign-to-Text API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,42 +99,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Reference skeletons directory
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SKELETONS_DIR = os.path.join(BASE_DIR, "Backend-API", "skeletons")
-
-# Initialize matcher
-matcher = SkeletonMatcher(SKELETONS_DIR)
+@app.get("/")
+async def root():
+    return {
+        "status": "Running",
+        "interface": "AI Vision (Qwen2-VL)",
+        "instruction": "Connect via the Frontend UI."
+    }
 
 @app.get("/health")
 async def health():
     return {
-        "status": "ok",
-        "templates_loaded": len(matcher.templates),
-        "supported_words": [f"{lang}:{word}" for lang, word in matcher.templates.keys()]
+        "interface": "AI Vision (Qwen2-VL)",
+        "ai_active": qwen_matcher is not None,
+        "colab_url": qwen_matcher.colab_url if qwen_matcher else None
     }
-
-@app.post("/reload")
-async def reload_templates():
-    matcher.load_templates()
-    return {"status": "success", "templates_loaded": len(matcher.templates)}
 
 @app.websocket("/ws/match")
 async def websocket_match(websocket: WebSocket):
+    global qwen_matcher
     await websocket.accept()
-    print("Sign-to-Text WebSocket client connected")
+    print("[SERVER] WebSocket Client Connected")
     
-    # Reload templates on new client connection to capture any new text-to-sign cached files
-    matcher.load_templates()
-    
-    # Frame buffer for sliding window
     frame_buffer = []
-    max_window_size = 150 # about 5 seconds at 30 fps
+    max_window_size = 120 
     frame_counter = 0
     cooldown_counter = 0
     
-    # Matching configurations
-    preferred_lang = None
+    # Configuration defaults
+    preferred_lang = "all"
     threshold = 0.3
     
     try:
@@ -60,12 +138,19 @@ async def websocket_match(websocket: WebSocket):
             if msg_type == "config":
                 preferred_lang = data.get("lang", preferred_lang)
                 threshold = data.get("threshold", threshold)
-                print(f"Config updated: lang={preferred_lang}, threshold={threshold}")
+                
+                # Signal frontend to capture images
+                await websocket.send_json({"type": "config_ack", "use_llm": True})
+                
+                new_url = data.get("colab_url")
+                if new_url and (not qwen_matcher or qwen_matcher.colab_url != new_url):
+                    qwen_matcher = QwenMatcher(new_url)
+                    save_persisted_url(new_url)
+                    print(f"[SERVER] Vision Endpoint Updated: {new_url}")
                 
             elif msg_type == "reset":
                 frame_buffer.clear()
                 cooldown_counter = 0
-                print("Buffer reset")
                 
             elif msg_type == "frame":
                 if cooldown_counter > 0:
@@ -74,49 +159,57 @@ async def websocket_match(websocket: WebSocket):
                     
                 frame = data.get("frame")
                 if frame:
+                    # Debug logging
+                    if frame_counter % 20 == 0:
+                        has_img = "YES" if frame.get("image") else "NO"
+                        print(f"[DEBUG] Frame {frame_counter}: Image Data: {has_img}")
+
                     frame_buffer.append(frame)
                     if len(frame_buffer) > max_window_size:
                         frame_buffer.pop(0)
                         
                     frame_counter += 1
                     
-                    # Run matching every 4 frames (around 8-10 times per second)
-                    # and only if we have at least 15 frames in the buffer
-                    if frame_counter % 4 == 0 and len(frame_buffer) >= 15:
-                        word, confidence, candidate, dist = matcher.find_match(
-                            frame_buffer, 
-                            preferred_lang=preferred_lang, 
-                            threshold=threshold
-                        )
+                    if frame_counter % 30 == 0 and len(frame_buffer) >= 20:
+                        word, confidence, candidate, dist = None, 0.0, None, 0.0
                         
-                        # Send live candidate trace details back to the web client
+                        if qwen_matcher:
+                            if has_hand_activity(frame_buffer[-20:]):
+                                print("[ANALYSIS] Hand activity detected. Invoking vision model...")
+                                word, confidence, candidate, dist = await qwen_matcher.find_match(
+                                    frame_buffer, 
+                                    preferred_lang=preferred_lang, 
+                                    threshold=threshold
+                                )
+                            else:
+                                candidate = "Monitoring..."
+                        else:
+                            candidate = "Vision Server Offline"
+                        
                         await websocket.send_json({
                             "type": "trace",
                             "candidate": candidate,
-                            "distance": dist if dist is not None else 9.99,
-                            "threshold": threshold
+                            "distance": 0.0,
+                            "threshold": threshold,
+                            "method": "vision-analysis"
                         })
                         
                         if word:
-                            print(f"Match found: {word} ({confidence:.2f})")
+                            print(f"[RESULT] Sign Recognized: {word.upper()}")
                             await websocket.send_json({
                                 "type": "match",
                                 "word": word,
-                                "confidence": confidence
+                                "confidence": confidence,
+                                "method": "ai-vision"
                             })
-                            # Clear buffer and trigger cooldown so user can return to neutral/make next sign
                             frame_buffer.clear()
-                            cooldown_counter = 12 # ignore next 12 frames (approx 0.4 seconds)
+                            cooldown_counter = 45
                             
     except WebSocketDisconnect:
-        print("Sign-to-Text WebSocket client disconnected")
+        print("[SERVER] WebSocket Client Disconnected")
     except Exception as e:
-        print(f"WebSocket error: {e}")
-        try:
-            await websocket.close()
-        except:
-            pass
+        print(f"[ERROR] WebSocket Loop: {e}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8005, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8005, log_level="info")
