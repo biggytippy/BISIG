@@ -11,16 +11,28 @@ from qwen_matcher import QwenMatcher
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "colab_config.json")
 
 def get_persisted_url():
+    # 1. Prioritize environment variables first so URL won't leak in the git repository
+    env_url = os.environ.get("COLAB_URL") or os.environ.get("VISION_SERVER_URL")
+    if env_url:
+        return env_url
+        
+    # 2. Load from colab_config.json and expand environment variables inside the string
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r") as f:
                 data = json.load(f)
-                return data.get("colab_url")
+                url = data.get("colab_url")
+                if url:
+                    expanded = os.path.expandvars(url)
+                    # Verify if the environment variable was resolved (no remaining unresolved '$')
+                    if "$" not in expanded:
+                        return expanded
         except:
             return None
     return None
 
 def save_persisted_url(url):
+    # Only save to file if not already set or overriding environment variable
     with open(CONFIG_FILE, "w") as f:
         json.dump({"colab_url": url}, f)
 
@@ -73,17 +85,22 @@ async def lifespan(app: FastAPI):
     
     url = get_persisted_url()
     
-    if url:
-        print(f"Current Vision Server: {url}")
-        change = input("Press [Enter] to keep, or type NEW URL: ").strip()
-        if change:
-            url = change
-            save_persisted_url(url)
+    # If a valid URL is configured, use it directly to prevent blocking in background environments
+    if url and url != "THE url OF THE LMM Visual":
+        print(f"Loaded Vision Server URL from config: {url}")
     else:
-        while not url:
-            url = input("Enter Vision Server (Colab) URL: ").strip()
-        save_persisted_url(url)
-    
+        # Only prompt if stdin is interactive (a TTY)
+        if sys.stdin.isatty():
+            try:
+                while not url or url == "THE url OF THE LMM Visual":
+                    url = input("Enter Vision Server (Colab) URL: ").strip()
+                save_persisted_url(url)
+            except (EOFError, KeyboardInterrupt):
+                url = "http://localhost:8000" # fallback placeholder
+        else:
+            print("[WARNING] Vision Server URL not configured. You can update it dynamically from the Frontend.")
+            url = "http://localhost:8000" # fallback placeholder
+            
     print(f"\nSTATUS: Initializing with Vision Server @ {url}")
     qwen_matcher = QwenMatcher(url)
     print("="*45 + "\n")
