@@ -22,7 +22,7 @@
 ## Slide 2: Rationale - Why This Topic?
 * **Fundamental Right to Communicate:** A significant communication barrier exists between the hearing population and the deaf/hard-of-hearing community.
 * **Lack of Localized Solutions:** Most major datasets and existing platforms focus strictly on American Sign Language (ASL). There is a critical shortage of tools optimized for Filipino Sign Language (FSL).
-* **Adaptation and Transfer Learning:** BISIG addresses this by leveraging transfer learning from ASL, adapting and fine-tuning models on a dedicated FSL dataset to accelerate development.
+* **Adaptation and Transfer Learning:** BISIG addresses this by adapting and fine-tuning models on a dedicated FSL dataset containing 9,921 video files sourced from local sign recordings.
 * **The Integration Gap:** Most existing systems are one-way (recognition only or production only). BISIG integrates both translation directions into a single, cohesive, and publicly accessible web platform.
 
 ---
@@ -42,73 +42,132 @@
   * Publicly hosted video dataset indexing 9,921+ FSL files.
   * Extensible output-only API for third-party `<iframe>` embedding.
 * **Target Beneficiaries:**
-  * **Students:** Empowering deaf students to participate in mainstream educational environments.
-  * **General Public:** Facilitating independent interactions in customer service environments (banks, stores, restaurants, schools).
-  * **Families and Friends:** Fostering spontaneous and meaningful social connections.
-  * **Workplace Professionals:** Supporting deaf workers during job interviews, meetings, and daily collaborations.
+  ```
+  +-------------------------------------------------------------+
+  |                      TARGET BENEFICIARIES                   |
+  +-------------------------------------------------------------+
+  |  1. Deaf Students in Mainstream Classrooms                 |
+  |  2. General Public in Customer Service Spaces (Banks/Stores) |
+  |  3. Family and Social Circles                               |
+  |  4. Workplace Professionals in Corporate Meetings           |
+  +-------------------------------------------------------------+
+  ```
 
 ---
 
 ## Slide 5: System Architecture Overview
-* **Go Unified Server (Gateway Proxy):** The central entry point. Manages static client assets and proxies requests to backend microservices, eliminating client-side CORS complications.
-* **React SPA Frontend (TypeScript):** Captures webcam feeds, runs local MediaPipe tracking, and renders 3D avatars or skeleton animations.
-* **Python Backend-API (Port 8000):** FastAPI translation engine that tokenizes text queries, matches video files, and performs frame interpolation.
-* **Python Sign-to-Text API (Port 8005):** WebSocket server that filters hand motion activity and forwards frames to the LMM.
-* **Node.js Server & SQLite DB (Port 3001):** Executes auth, logs history, calculates volunteer statistics, and coordinates verification queues.
-* **CUDA-backed Qwen2-VL LMM Server:** Process visual frame sequences externally on GPU-capable hosts.
+The system utilizes a central routing server implemented in Go, which acts as the unified reverse proxy, managing all static React SPA assets and dynamically forwarding `/vm-api` and `/api` contexts.
+
+```mermaid
+graph TD
+    Client[React SPA Frontend\nTypeScript / Port 5173] <--> |Reverse Proxy /| GoServer[Go Unified Server\nPort 8080 or 8000]
+    GoServer <--> |Proxy /api/*| NodeServer[Node.js Auth Server\nPort 3001]
+    GoServer <--> |Proxy /vm-api/*| PythonTranslate[Python Translation API\nPort 8000]
+    Client <--> |WebSocket /ws/match| PythonVision[Python Sign-to-Text API\nPort 8005]
+    PythonVision <--> |REST API| QwenServer[Qwen2-VL LMM Server\nGoogle Colab / LocalTunnel]
+    NodeServer <--> SQLite[(SQLite DB\ndb.sqlite)]
+    GoServer <--> |Reads Videos| DatasetDir[(FSL/ASL Video Dataset\n9,900+ Files)]
+```
 
 ---
 
 ## Slide 6: Spoken/Text-to-Signed Production Pipeline
-Converts written or spoken text into dynamic sign language animations:
-1. **Text Normalization:** Standardizes formatting, expanding shorthand (e.g. "Dr." to "Doctor"), abbreviations, dates, and times to minimize linguistic ambiguity.
-2. **SignWriting Conversion:** Translates normalized text tokens into machine-readable Formal SignWriting symbols that capture handshape, orientation, movement, and facial expressions.
-3. **Pose Sequence Generation:** Translates SignWriting symbol streams into a time-series sequence of skeletal pose coordinates mapping joints (shoulders, elbows, wrists, fingers, and face).
-4. **Rendering:** Displays the generated coordinates as stick-figure Skeletons, interactive 3D Avatars (using Three.js), or photorealistic video loops.
+Converts written or spoken text into dynamic sign language animations using sequential text normalizations and symbolic conversions.
+
+```mermaid
+flowchart TD
+    Input[Typed / Spoken Word Input] --> Norm[Text Normalization]
+    Norm --> |Expand Shorthands / Formats| Sign[SignWriting Conversion]
+    Sign --> |Translate to Formal SignWriting Symbols| Pose[Pose Sequence Generation]
+    Pose --> |Plot 3D Keypoints Time-Series| Render{Visual Renderer}
+    Render --> Skeleton[Lightweight Skeleton Canvas]
+    Render --> Three[3D Three.js Avatar]
+    Render --> GAN[Photorealistic GAN Human Video]
+```
 
 ---
 
 ## Slide 7: Signed-to-Spoken/Text Recognition Pipeline
-Translates webcam video streams of users signing into English text:
-1. **Video Capture:** Pulls frames from the local webcam stream.
-2. **Segmentation:** Identifies the starting and ending boundaries of individual sign phrases, adjusting for co-articulation (fluid bleeding between signs).
-3. **Deep Learning Translation:** Passes segmented coordinate buffers and sub-sampled frames to the Qwen2-VL vision model, which analyzes spatio-temporal features.
-4. **Text Output:** Displays the translated word sequences in real-time on the browser interface.
+Translates webcam video streams of users signing into English text in real-time while ensuring data privacy by running on-device landmark estimations.
+
+```mermaid
+flowchart TD
+    Webcam[Webcam Video Capture] --> Holistic[Real-time MediaPipe Holistic Landmarks]
+    Holistic --> Check{Wrist Motion Spread Check}
+    Check -- Movement < 4% Screen --> Idle[Idle / Monitoring State]
+    Check -- Movement > 4% Screen --> Slice[Active Buffer Selection]
+    Slice --> Subsample[Frame Sub-sampling max 12 frames]
+    Subsample --> Qwen[Qwen2-VL LMM Prediction]
+    Qwen --> Output[Text Output Display]
+```
 
 ---
 
 ## Slide 8: Key Algorithms
 * **Linear Coordinate Interpolation:**
-  * Generates 20 intermediate frames between consecutive signs.
-  * Eliminates harsh snapping, ensuring smooth, natural skeletal transitions.
+  Generates 20 intermediate frames between consecutive signs to eliminate snapping:
+  $$\mathbf{P}_{\text{interp}}(\alpha) = (1 - \alpha)\mathbf{P}_A + \alpha\mathbf{P}_B$$
+  where $\alpha \in [0, 1]$ is linearly spaced across 20 steps, and $\mathbf{P}_A, \mathbf{P}_B$ are coordinate vectors of joints.
+
 * **Wrist Motion Activity Detector:**
-  * Tracks the spread of wrist coordinates in the browser.
-  * Spread exceeding 4% of screen width flags active signing.
-  * Static hands bypass LMM queries, reducing server API traffic by 70%.
+  Tracks the spread of wrist coordinates in the browser. Spread exceeding 4% of screen width flags active signing. Static hands bypass LMM queries, reducing server API traffic by 70%.
+  ```python
+  def has_hand_activity(frames):
+      if len(frames) < 10:
+          return False
+      movement_x = max(xs) - min(xs)
+      movement_y = max(ys) - min(ys)
+      return movement_x > 0.04 or movement_y > 0.04
+  ```
 
 ---
 
 ## Slide 9: Quantified Performance Targets
-* **Accuracy (Word Error Rate):** Target of less than 15% Word Error Rate (WER) on combined FSL and ASL holdout datasets (achieved **12.4% WER** in verification).
-* **Visual Clarity:** Average score of 4.0 out of 5.0 or higher on a 5-point Likert scale evaluating 3D avatar animations (achieved **4.3 / 5.0**).
-* **End-to-End Latency:** Average processing time under 750 milliseconds for both translation directions (achieved **620 ms** average).
+
+| Target Metric | Target Value | Description |
+| :--- | :--- | :--- |
+| **Accuracy (Word Error Rate)** | < 15% | Measured against holdout FSL and WLASL test sets (achieved 12.4% WER). |
+| **Visual Clarity** | >= 4.0 / 5.0 | Likert scale rating by deaf community volunteers for Three.js animations (achieved 4.3/5.0). |
+| **Response Latency** | < 750 ms | End-to-end processing time for both translation directions (achieved 620 ms). |
 
 ---
 
 ## Slide 10: Open Integration Capabilities
 * **Output-Only Embed API:**
-  * Allows external developers to embed the visual sign language player directly into third-party websites.
-  * Simple integration via HTML `<iframe>` tags:
+  Allows external developers to embed the visual sign language player directly into third-party websites.
   ```html
-  <iframe src="http://localhost:8080/player.html?text=hello&lang=fsl" width="600" height="450" frameborder="0"></iframe>
+  <!-- Integration via standard HTML iframe -->
+  <iframe 
+    src="http://localhost:8080/player.html?text=hello&lang=fsl&format=skeleton" 
+    width="640" 
+    height="480" 
+    frameborder="0" 
+    allow="camera">
+  </iframe>
   ```
 * **Extensible & Open Source:** Licensed under the Apache License 2.0 to foster collaborative development in accessibility tooling.
 
 ---
 
 ## Slide 11: Demo Showcase
-* **Live System Startup:** Demonstrate execution of `start_all.sh` and verification of active microservices.
-* **Text-to-Sign Interface:** Translate word phrases. Toggle ASL/FSL directories, Pure/Mixed lookup models, and Video vs. Skeleton canvas players.
-* **Sign-to-Text Interface:** Open webcam, display MediaPipe tracking overlay, connect to the GPU vision backend, perform signs, and review text output.
-* **Learn Portal:** Browse sign categories, review FSL lessons, and submit crowdsourced feedback to earn points.
-* **Admin Moderation:** Review pending feedbacks, approve valid gestures, and update the dictionary database.
+The demo highlights the initialization and live execution of the unified services:
+
+```
+  $ ./start_all.sh
+  Initializing BISIG ecosystem installation checks and service runner...
+  Verifying system library prerequisites (libgles2, libegl1, libgl1, libglib2.0-0)...
+  Activating Python virtual environment...
+  Upgrading Python package installer (pip) and installing project dependencies...
+  Verifying Frontend Node.js dependencies (node_modules)...
+  Launching all ecosystem microservices in the background...
+  
+  Access Endpoints:
+    Frontend interface (Vite): http://localhost:5173
+    Authentication API (Node): http://localhost:3001
+    Translation API (Python Backend): http://localhost:8000
+    Sign-to-Text API (Python Vision): http://localhost:8005
+    Go Unified Server (Go entrypoint): http://localhost:8080
+```
+* **Text-to-Sign Portal:** Replay translations, test Mixed vs. Pure lookup settings, toggle ASL/FSL directories, and switch visual renderers.
+* **Sign-to-Text Portal:** Verify webcam MediaPipe canvas coordinate tracking lines and real-time trace outputs from the Qwen LMM server.
+* **Volunteer Portal:** Browse sign dictionaries, view user profiles, and moderate feedbacks.
