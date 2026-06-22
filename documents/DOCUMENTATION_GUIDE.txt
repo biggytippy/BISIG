@@ -1,0 +1,59 @@
+BISIG DOCUMENT COMPILATION GUIDE
+================================
+
+This guide explains how the Technical Documentation, User Manual, and Presentation Deck are converted from their source Markdown (.md) files into professional PDF and DOCX formats.
+
+Source files:
+- documents/BISIG_Technical_Documentation.md
+- documents/BISIG_User_Manual.md
+- documents/BISIG_Presentation.md
+
+--------------------------------------------------------------------------------
+1. PDF COMPILATION (Node.js & Puppeteer)
+--------------------------------------------------------------------------------
+To compile Markdown to PDF with client-side execution support for Mermaid.js flowcharts and LaTeX math notation, we use a headless Chromium instance controlled by Puppeteer.
+
+How it works:
+1. The script reads the Markdown file content and reads the local repository logo (image/logo.png) to base64 encode it.
+2. It constructs an HTML wrapper loaded with CDNs for:
+   - Marked.js (Markdown parser)
+   - Highlight.js (Code syntax highlighting, styled in Courier New)
+   - KaTeX (LaTeX math auto-rendering engine)
+   - Mermaid.js (For rendering flowcharts dynamically)
+3. It styles the page to Arial font, size 11pt, hides horizontal rules (for clean layout page-breaks), and removes standard blue links.
+4. Puppeteer loads the local HTML file, waits for all client-side rendering (marked parsing, math rendering, and mermaid drawing) to complete, and prints a Letter-size PDF.
+
+To run the compiler:
+1. Ensure the Node dependencies (puppeteer) are installed in node_modules in the workspace root:
+   npm install puppeteer
+2. Navigate to the documents directory and run the compiler script:
+   cd documents
+   NODE_PATH=../node_modules node compile_markdown.js
+
+Output files generated:
+- documents/BISIG_Technical_Documentation.pdf
+- documents/BISIG_User_Manual.pdf
+- documents/BISIG_Presentation.pdf
+
+--------------------------------------------------------------------------------
+2. DOCX COMPILATION (Pandoc)
+--------------------------------------------------------------------------------
+To compile Markdown directly to native Microsoft Word documents, we use Pandoc, an open-source document converter.
+
+How it works:
+1. Pandoc translates the Markdown syntax directly into Office Open XML (DOCX).
+2. LaTeX math blocks (like $$\mathbf{P}_{...}$$) are parsed and converted by Pandoc into native, editable Office Open XML Math (OMML) objects.
+3. Because Word is a static binary and cannot run client-side JavaScript, raw Mermaid.js blocks are formatted as standard monospace code blocks.
+
+To run the conversion:
+1. Make sure pandoc is installed on the host system:
+   sudo apt-get install -y pandoc
+2. Run the pandoc conversion commands:
+   pandoc -f markdown -t docx -o documents/BISIG_Technical_Documentation.docx documents/BISIG_Technical_Documentation.md
+   pandoc -f markdown -t docx -o documents/BISIG_User_Manual.docx documents/BISIG_User_Manual.md
+   pandoc -f markdown -t docx -o documents/BISIG_Presentation.docx documents/BISIG_Presentation.md
+
+Output files generated:
+- documents/BISIG_Technical_Documentation.docx
+- documents/BISIG_User_Manual.docx
+- documents/BISIG_Presentation.docx

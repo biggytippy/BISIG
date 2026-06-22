@@ -1,5 +1,9 @@
 # BISIG - Bidirectional Interface for Sign Intelligence & Gestures
 
+<p align="center">
+  <img src="image/logo.png" alt="BISIG Logo" width="180">
+</p>
+
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Datasets-yellow)](https://huggingface.co/datasets/Golgrax/bisig-fsl-dataset)
 
 BISIG (FSL Intelligence) is a unified platform designed to empower the Filipino deaf and hard-of-hearing community by bridging the communication gap through real-time, bidirectional translation between Filipino Sign Language (FSL) and spoken/written language.
