@@ -42,7 +42,16 @@ The core data repository and high-performance media server.
 
 ## 🚀 Getting Started
 
-To run the entire ecosystem locally, please refer to the specific setup guides within each directory:
+To run the entire ecosystem locally, you can use the startup script:
+
+1. **Start all services with a Colab Tunnel URL**:
+   Provide your LMM visual server's tunnel URL (e.g., LocalTunnel) via the `COLAB_URL` environment variable:
+   ```bash
+   chmod +x start_all.sh
+   COLAB_URL="https://your-tunnel-subdomain.loca.lt" ./start_all.sh
+   ```
+
+Or you can refer to the specific setup guides within each directory for individual components:
 - [Backend Setup](./Backend-API/README.md)
 - [Frontend Setup](./Frontend/README.md)
 - [Dataset & Server Setup](./FSL-Datasets/README.md)
