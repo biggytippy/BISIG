@@ -80,3 +80,8 @@ FSL-Datasets/metadata/*
 FSL-Datasets/fsl-server
 FSL-Datasets/logs
 FSL-Datasets/api.log
+
+# --- Root Node Files (Puppeteer compiler dependencies) ---
+package.json
+package-lock.json
+
