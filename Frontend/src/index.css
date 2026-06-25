@@ -44,6 +44,8 @@ body {
 .grid { display: grid; gap: 1.5rem; }
 .flex { display: flex; gap: 0.75rem; align-items: center; }
 .flex-col { flex-direction: column; align-items: stretch; }
+.flex-1 { flex: 1 1 0%; }
+.flex-wrap { flex-wrap: wrap; }
 .justify-between { justify-content: space-between; }
 .items-center { align-items: center; }
 .w-full { width: 100%; }
@@ -148,6 +150,9 @@ body {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Side Panel / Drawer System */
@@ -201,6 +206,15 @@ body {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Hide scrollbar for .pop-input but keep scrollable */
+.pop-input {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.pop-input::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Animations */
@@ -258,4 +272,170 @@ body {
   gap: 4px;
   width: fit-content;
   margin: 2rem auto;
+}
+
+/* Team Card Avatar Zoom Effect */
+.team-avatar-container {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg);
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.team-avatar-container:hover {
+  transform: scale(1.35) translateY(-8px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+}
+.team-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Mobile Responsiveness & Layout Stability */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll entirely */
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .container {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  /* Reduce container and card padding to fit small screens */
+  .card {
+    padding: 1.25rem !important;
+  }
+  .hero-gradient {
+    padding: 3rem 1.5rem !important;
+  }
+  .hero-gradient h1 {
+    font-size: 2.5rem !important;
+  }
+
+  /* Reduce header container padding on mobile */
+  header .container {
+    padding: 0 1.25rem !important;
+  }
+
+  /* Hide desktop nav links on mobile */
+  .nav-links {
+    display: none !important;
+  }
+
+  /* Show mobile menu hamburger button */
+  .mobile-menu-btn {
+    display: inline-flex !important;
+  }
+
+  /* Reduce header gap & border on mobile */
+  header nav {
+    gap: 0.75rem !important;
+  }
+  .header-actions {
+    border-left: none !important;
+    padding-left: 0 !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Team members grid: 2 columns on mobile */
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  /* Stack translation buttons vertically on mobile for stability */
+  .translation-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .translation-actions .btn {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Footer connection styling for vertical stack */
+  .footer-connect {
+    border-left: none !important;
+    padding-left: 0 !important;
+    border-top: 1px solid var(--border) !important;
+    padding-top: 1.5rem !important;
+    margin-top: 1.5rem !important;
+    align-items: center !important;
+  }
+
+  /* Grid 12 and Column overrides for mobile */
+  .grid-12 {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+  .grid-12 .col-6 {
+    grid-column: span 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduce output box viewport height on mobile */
+  .view-port {
+    min-height: 280px !important;
+  }
+
+  /* Stack dictionary filter, sort, and search vertically on mobile */
+  .dictionary-controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 1rem !important;
+  }
+  .dictionary-controls .settings-group {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+  .dictionary-controls select,
+  .dictionary-controls .pop-input {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  /* Dictionary Header layout stack on mobile */
+  .dictionary-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.5rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* Pagination buttons sizing on mobile */
+  .pagination-row {
+    gap: 0.25rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+  }
+  .pagination-row .btn {
+    padding: 0.4rem 0.6rem !important;
+    min-width: 36px !important;
+    font-size: 0.8rem !important;
+    height: 36px !important;
+  }
+
+  /* Reorder Input/Output layout on mobile */
+  .translator-input-col {
+    order: 2 !important;
+  }
+  .translator-output-col {
+    order: 1 !important;
+  }
 }
