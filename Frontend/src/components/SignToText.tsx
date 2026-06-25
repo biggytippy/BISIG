@@ -476,7 +476,7 @@ export default function SignToText({ userId, onNewHistoryEntry, renderTabSwitche
                 </div>
               </div>
               <h3 style={{ fontWeight: 800, marginBottom: "0.5rem" }}>
-                SIGN-TO-TEXT <span className="badge secondary" style={{ verticalAlign: "middle", marginLeft: "0.5rem" }}>LIVE</span>
+                SIGN-TO-TEXT
               </h3>
               <p style={{ fontSize: "0.85rem", color: "var(--muted)", maxWidth: "320px", margin: "0 auto 2rem" }}>
                 Allow camera access to capture skeleton movements and perform real-time matching.

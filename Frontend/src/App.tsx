@@ -46,6 +46,9 @@ import {
   Info,
   ShieldCheck,
   AlertCircle,
+  Menu,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   motion,
@@ -117,206 +120,326 @@ const interpolateFrames = (frameA: any, frameB: any, count = 15) => {
 
 /* --- Shared Layout Components --- */
 
-const Nav = ({ page, setPage, onOpenPanel, user, onLogout }: any) => (
-  <motion.header
-    initial={{ y: -100 }}
-    animate={{ y: 0 }}
-    style={{
-      position: "sticky",
-      top: 0,
-      zIndex: 1000,
-      width: "100%",
-      background: "rgba(15, 23, 42, 0.7)",
-      backdropFilter: "blur(20px)",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-      padding: "1rem 0",
-    }}
-  >
-    <div
-      className="container"
-      style={{ maxWidth: "1400px", padding: "0 4rem" }}
+const Nav = ({ page, setPage, onOpenPanel, user, onLogout }: any) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  return (
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        width: "100%",
+        background: "rgba(15, 23, 42, 0.7)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+        padding: "1rem 0",
+      }}
     >
       <div
-        className="flex justify-between items-center"
-        style={{ maxWidth: "1200px", margin: "0 auto" }}
+        className="container"
+        style={{ maxWidth: "1400px", padding: "0 4rem" }}
       >
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex"
-          onClick={() => setPage("home")}
-          style={{ cursor: "pointer", gap: "12px" }}
+        <div
+          className="flex justify-between items-center header-row"
+          style={{ maxWidth: "1200px", margin: "0 auto" }}
         >
-          <div
-            style={{
-              background: "var(--accent)",
-              width: "38px",
-              height: "38px",
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 0 20px rgba(34, 197, 94, 0.3)",
-              overflow: "hidden",
-            }}
-          >
-            <img 
-              src="/logo.png" 
-              alt="BISIG" 
-              style={{ 
-                width: "100%", 
-                height: "100%", 
-                objectFit: "cover",
-                filter: "brightness(0)" 
-              }} 
-            />
-          </div>
-          <h2
-            style={{
-              fontSize: "1.4rem",
-              fontWeight: 900,
-              letterSpacing: "-1px",
-              margin: 0,
-            }}
-          >
-            BISIG
-          </h2>
-        </motion.div>
-        <nav className="flex items-center" style={{ gap: "2rem" }}>
-          <div
-            className="hidden md-flex"
-            style={{ display: "flex", gap: "0.25rem" }}
-          >
-            {["home", "translator", "learn", "directory", "about"].map((p) => (
-              <motion.button
-                key={p}
-                whileHover={{ background: "rgba(255,255,255,0.05)" }}
-                className={`btn ghost ${page === p ? "active" : ""}`}
-                style={{
-                  fontSize: "0.9rem",
-                  padding: "0.6rem 1.2rem",
-                  border:
-                    page === p
-                      ? "1px solid rgba(34, 197, 94, 0.3)"
-                      : "1px solid transparent",
-                  color: page === p ? "var(--accent)" : "var(--fg)",
-                }}
-                onClick={() => setPage(p)}
-              >
-                {p === "learn"
-                  ? "Dictionary"
-                  : p === "about"
-                    ? "Research"
-                    : p.charAt(0).toUpperCase() + p.slice(1)}
-              </motion.button>
-            ))}
-            {user && (
-              <motion.button
-                whileHover={{ background: "rgba(255,255,255,0.05)" }}
-                className={`btn ghost ${page === "dashboard" ? "active" : ""}`}
-                style={{
-                  fontSize: "0.9rem",
-                  padding: "0.6rem 1.2rem",
-                  border:
-                    page === "dashboard"
-                      ? "1px solid rgba(34, 197, 94, 0.3)"
-                      : "1px solid transparent",
-                  color:
-                    page === "dashboard" ? "var(--accent)" : "var(--tertiary)",
-                }}
-                onClick={() => setPage("dashboard")}
-              >
-                Dashboard
-              </motion.button>
-            )}
-            {user?.isAdmin && (
-              <motion.button
-                whileHover={{ background: "rgba(255,255,255,0.05)" }}
-                className={`btn ghost ${page === "admin" ? "active" : ""}`}
-                style={{
-                  fontSize: "0.9rem",
-                  padding: "0.6rem 1.2rem",
-                  border:
-                    page === "admin"
-                      ? "1px solid #ef4444"
-                      : "1px solid transparent",
-                  color: "#ef4444",
-                }}
-                onClick={() => setPage("admin")}
-              >
-                Admin
-              </motion.button>
-            )}
-          </div>
-          <div
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="flex"
-            style={{
-              borderLeft: "1px solid rgba(255,255,255,0.1)",
-              paddingLeft: "1.5rem",
-              gap: "0.75rem",
+            onClick={() => {
+              setPage("home");
+              setMobileMenuOpen(false);
             }}
+            style={{ cursor: "pointer", gap: "12px" }}
           >
-            <motion.button
-              whileHover={{ scale: 1.1, background: "rgba(255,255,255,0.05)" }}
-              className="btn ghost"
-              onClick={() => onOpenPanel("history")}
-              style={{ padding: "0.6rem", borderRadius: "12px" }}
-              title="Activity"
+            <div
+              style={{
+                background: "var(--accent)",
+                width: "38px",
+                height: "38px",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 20px rgba(34, 197, 94, 0.3)",
+                overflow: "hidden",
+              }}
             >
-              <History size={20} />
-            </motion.button>
-            {user ? (
-              <div className="flex gap-3 items-center">
-                <motion.div
-                  whileHover={{ scale: 1.05, borderColor: "var(--accent)" }}
-                  onClick={() => onOpenPanel("profile")}
+              <img 
+                src="/logo.png" 
+                alt="BISIG" 
+                style={{ 
+                  width: "100%", 
+                  height: "100%", 
+                  objectFit: "cover",
+                  filter: "brightness(0)" 
+                }} 
+              />
+            </div>
+            <h2
+              style={{
+                fontSize: "1.4rem",
+                fontWeight: 900,
+                letterSpacing: "-1px",
+                margin: 0,
+              }}
+            >
+              BISIG
+            </h2>
+          </motion.div>
+          <nav className="flex items-center" style={{ gap: "2rem" }}>
+            <div
+              className="nav-links"
+              style={{ display: "flex", gap: "0.25rem" }}
+            >
+              {["home", "translator", "learn", "directory", "about"].map((p) => (
+                <motion.button
+                  key={p}
+                  whileHover={{ background: "rgba(255,255,255,0.05)" }}
+                  className={`btn ghost ${page === p ? "active" : ""}`}
                   style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "50%",
-                    border: "2px solid rgba(255,255,255,0.1)",
-                    background: "var(--surface-lighter)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    padding: "0.6rem 1.2rem",
+                    border:
+                      page === p
+                        ? "1px solid rgba(34, 197, 94, 0.3)"
+                        : "1px solid transparent",
+                    color: page === p ? "var(--accent)" : "var(--fg)",
+                  }}
+                  onClick={() => setPage(p)}
+                >
+                  {p === "learn"
+                    ? "Dictionary"
+                    : p === "about"
+                      ? "Research"
+                      : p.charAt(0).toUpperCase() + p.slice(1)}
+                </motion.button>
+              ))}
+              {user && (
+                <motion.button
+                  whileHover={{ background: "rgba(255,255,255,0.05)" }}
+                  className={`btn ghost ${page === "dashboard" ? "active" : ""}`}
+                  style={{
+                    fontSize: "0.9rem",
+                    padding: "0.6rem 1.2rem",
+                    border:
+                      page === "dashboard"
+                        ? "1px solid rgba(34, 197, 94, 0.3)"
+                        : "1px solid transparent",
+                    color:
+                      page === "dashboard" ? "var(--accent)" : "var(--tertiary)",
+                  }}
+                  onClick={() => setPage("dashboard")}
+                >
+                  Dashboard
+                </motion.button>
+              )}
+              {user?.isAdmin && (
+                <motion.button
+                  whileHover={{ background: "rgba(255,255,255,0.05)" }}
+                  className={`btn ghost ${page === "admin" ? "active" : ""}`}
+                  style={{
+                    fontSize: "0.9rem",
+                    padding: "0.6rem 1.2rem",
+                    border:
+                      page === "admin"
+                        ? "1px solid #ef4444"
+                        : "1px solid transparent",
+                    color: "#ef4444",
+                  }}
+                  onClick={() => setPage("admin")}
+                >
+                  Admin
+                </motion.button>
+              )}
+            </div>
+            <div
+              className="flex header-actions"
+              style={{
+                borderLeft: "1px solid rgba(255,255,255,0.1)",
+                paddingLeft: "1.5rem",
+                gap: "0.75rem",
+              }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.1, background: "rgba(255,255,255,0.05)" }}
+                className="btn ghost"
+                onClick={() => onOpenPanel("history")}
+                style={{ padding: "0.6rem", borderRadius: "12px" }}
+                title="Activity"
+              >
+                <History size={20} />
+              </motion.button>
+              {user ? (
+                <div className="flex gap-3 items-center">
+                  <motion.div
+                    whileHover={{ scale: 1.05, borderColor: "var(--accent)" }}
+                    onClick={() => onOpenPanel("profile")}
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "50%",
+                      border: "2px solid rgba(255,255,255,0.1)",
+                      background: "var(--surface-lighter)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <User size={18} />
+                  </motion.div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, color: "#ef4444" }}
+                    className="btn ghost"
+                    onClick={onLogout}
+                    style={{ padding: "0.6rem" }}
+                  >
+                    <LogOut size={20} />
+                  </motion.button>
+                </div>
+              ) : (
+                <motion.button
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 0 20px rgba(34, 197, 94, 0.2)",
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className="btn primary"
+                  onClick={() => onOpenPanel("auth", "login")}
+                  style={{
+                    padding: "0.6rem 1.5rem",
+                    fontSize: "0.85rem",
+                    borderRadius: "12px",
                   }}
                 >
-                  <User size={18} />
-                </motion.div>
-                <motion.button
-                  whileHover={{ scale: 1.1, color: "#ef4444" }}
-                  className="btn ghost"
-                  onClick={onLogout}
-                  style={{ padding: "0.6rem" }}
-                >
-                  <LogOut size={20} />
+                  Sign In
                 </motion.button>
-              </div>
-            ) : (
+              )}
+              {/* Hamburger button visible only on mobile */}
               <motion.button
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 0 20px rgba(34, 197, 94, 0.2)",
-                }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="btn primary"
-                onClick={() => onOpenPanel("auth", "login")}
+                className="btn ghost mobile-menu-btn"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 style={{
-                  padding: "0.6rem 1.5rem",
-                  fontSize: "0.85rem",
+                  padding: "0.6rem",
                   borderRadius: "12px",
+                  display: "none",
                 }}
               >
-                Sign In
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </motion.button>
-            )}
-          </div>
-        </nav>
+            </div>
+          </nav>
+        </div>
       </div>
-    </div>
-  </motion.header>
-);
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mobile-dropdown"
+            style={{
+              background: "rgba(15, 23, 42, 0.98)",
+              backdropFilter: "blur(24px)",
+              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
+              overflow: "hidden",
+              marginTop: "0.75rem",
+            }}
+          >
+            <div
+              className="container"
+              style={{
+                padding: "1rem 2rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              {["home", "translator", "learn", "directory", "about"].map((p) => (
+                <button
+                  key={p}
+                  className={`btn ghost ${page === p ? "active" : ""}`}
+                  style={{
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    padding: "0.8rem 1.2rem",
+                    border:
+                      page === p
+                        ? "1px solid rgba(34, 197, 94, 0.3)"
+                        : "1px solid transparent",
+                    color: page === p ? "var(--accent)" : "var(--fg)",
+                  }}
+                  onClick={() => {
+                    setPage(p);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  {p === "learn"
+                    ? "Dictionary"
+                    : p === "about"
+                      ? "Research"
+                      : p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+              {user && (
+                <button
+                  className={`btn ghost ${page === "dashboard" ? "active" : ""}`}
+                  style={{
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    padding: "0.8rem 1.2rem",
+                    border:
+                      page === "dashboard"
+                        ? "1px solid rgba(34, 197, 94, 0.3)"
+                        : "1px solid transparent",
+                    color:
+                      page === "dashboard" ? "var(--accent)" : "var(--tertiary)",
+                  }}
+                  onClick={() => {
+                    setPage("dashboard");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Dashboard
+                </button>
+              )}
+              {user?.isAdmin && (
+                <button
+                  className={`btn ghost ${page === "admin" ? "active" : ""}`}
+                  style={{
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    padding: "0.8rem 1.2rem",
+                    border:
+                      page === "admin"
+                        ? "1px solid #ef4444"
+                        : "1px solid transparent",
+                    color: "#ef4444",
+                  }}
+                  onClick={() => {
+                    setPage("admin");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Admin
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
+  );
+};
 
 const Foot = () => (
   <footer className="container" style={{ padding: "4rem 0" }}>
@@ -358,7 +481,7 @@ const Foot = () => (
           </div>
         </div>
         <div
-          className="flex-col"
+          className="flex-col footer-connect"
           style={{ borderLeft: "1px solid var(--border)", paddingLeft: "2rem" }}
         >
           <p
@@ -754,7 +877,7 @@ const HeroSlideshow = () => {
 
 const LandingPage = ({ setPage }: any) => {
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 500], [0, 200]);
+  const y1 = useTransform(scrollY, [0, 500], [0, 80]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
   return (
     <div className="animate-pop">
@@ -887,6 +1010,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
   const [tokens, setTokens] = useState<any[]>([]); // Array<{ text: string, isPill: boolean }>
   const [isTranslating, setIsTranslating] = useState(false);
   const [status, setStatus] = useState("Ready");
+  const [showStatus, setShowStatus] = useState(true);
   const [format, setFormat] = useState("skeleton");
   const [lang, setLang] = useState("fsl");
   const [mode, setMode] = useState("mixed");
@@ -994,32 +1118,78 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.onresult = (event: any) => {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        setStatus("Listening...");
+      };
+
+      recognition.onresult = (event: any) => {
         const transcript = Array.from(event.results)
           .map((result: any) => result[0])
           .map((result) => result.transcript)
           .join("");
+        
         setInputText(transcript);
-        if (event.results[0].isFinal && wsRef.current?.readyState === WebSocket.OPEN) {
+
+        const latestResult = event.results[event.results.length - 1];
+        if (latestResult.isFinal && wsRef.current?.readyState === WebSocket.OPEN) {
           const words = transcript.trim().split(/\s+/);
-          sendToWS(words[words.length - 1]);
+          if (words.length > 0) {
+            sendToWS(words[words.length - 1]);
+          }
         }
       };
-      recognitionRef.current.onend = () => setIsListening(false);
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.onerror = (e: any) => {
+        console.error("Speech Recognition error:", e);
+        if (e.error === "not-allowed") {
+          setStatus("Mic permission denied");
+        } else {
+          setStatus(`Mic error: ${e.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
     }
   }, []);
 
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = lang === "fsl" ? "fil-PH" : "en-US";
+    }
+  }, [lang]);
+
   const toggleListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus("Speech recognition not supported in this browser.");
+      alert("Speech recognition is not supported in this browser. Please try Google Chrome, Safari, or Microsoft Edge.");
+      return;
+    }
+
+    if (!recognitionRef.current) {
+      setStatus("Speech recognition initializing...");
+      return;
+    }
+
     if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+      recognitionRef.current.stop();
     } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
-      setStatus("Listening...");
+      try {
+        recognitionRef.current.start();
+      } catch (err: any) {
+        console.error("Failed to start speech recognition:", err);
+        setStatus(`Error starting mic: ${err.message}`);
+      }
     }
   };
   const sentWordsCountRef = useRef<number>(0);
@@ -1282,6 +1452,31 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
       setIsTranslating(false);
     }
   };
+  const prevListeningRef = useRef(false);
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening) {
+      const trimmedText = inputText.trim();
+      if (trimmedText && (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)) {
+        translateText();
+      }
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, inputText]);
+
+  // Adjust textarea height dynamically to fit content and prevent scrollbars
+  useEffect(() => {
+    const textarea = document.getElementById("hiddenInput") as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      
+      const parent = textarea.parentElement;
+      if (parent) {
+        parent.scrollTop = parent.scrollHeight;
+      }
+    }
+  }, [inputText]);
+
   const handleVideoEnd = () => {
     if (currentVideoIndex < videoPlaylist.length - 1) {
       const nextIndex = currentVideoIndex + 1;
@@ -1302,7 +1497,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
       <div className="grid grid-12 gap-8">
         {activeTab === "t2s" ? (
           <>
-            <div className="col-6" style={{ gridColumn: "span 5" }}>
+            <div className="col-6 translator-input-col" style={{ gridColumn: "span 5" }}>
               <motion.div
                 initial={{ x: -50 }}
                 animate={{ x: 0 }}
@@ -1351,6 +1546,8 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                     style={{
                       flex: 1,
                       minHeight: "150px",
+                      maxHeight: "150px",
+                      overflowY: "auto",
                       display: "flex",
                       flexWrap: "wrap",
                       alignContent: "flex-start",
@@ -1427,6 +1624,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                         resize: "none",
                         padding: 0,
                         height: "40px",
+                        overflow: "hidden",
                       }}
                       placeholder={tokens.length === 0 ? "Enter phrase..." : ""}
                       value={inputText}
@@ -1488,7 +1686,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                       </label>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full translation-actions">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1499,9 +1697,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                       {isTranslating ? (
                         "Working..."
                       ) : (
-                        <>
-                          <Play size={18} /> TRANSLATE
-                        </>
+                        <>TRANSLATE</>
                       )}
                     </motion.button>
                     <motion.button
@@ -1510,22 +1706,29 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                       className="btn secondary flex-1"
                       onClick={startRealtime}
                     >
-                      <Activity size={18} /> LIVE (WS)
+                      LIVE (WS)
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="btn ghost"
+                      className="btn flex-1"
                       onClick={stopAll}
+                      style={{
+                        background: "rgba(239, 68, 68, 0.15)",
+                        borderColor: "rgba(239, 68, 68, 0.3)",
+                        color: "#f87171"
+                      }}
                     >
                       <StopCircle size={18} /> STOP
                     </motion.button>
                   </div>
                 </div>
                 <div
-                  className="mt-6 pt-4 flex flex-col gap-4"
+                  className="flex flex-col gap-4"
                   style={{
                     borderTop: "1px solid var(--border)",
+                    marginTop: "1rem",
+                    paddingTop: "1rem",
                   }}
                 >
                   <div className="flex flex-col gap-3">
@@ -1588,7 +1791,7 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                 </div>
               </motion.div>
             </div>
-            <div className="col-6" style={{ gridColumn: "span 7" }}>
+            <div className="col-6 translator-output-col" style={{ gridColumn: "span 7" }}>
               <motion.div
                 initial={{ x: 50 }}
                 animate={{ x: 0 }}
@@ -1600,32 +1803,34 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                   position: 'relative'
                 }}
               >
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '2rem', 
-                  right: '2rem', 
-                  zIndex: 100,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: 'rgba(0,0,0,0.5)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '20px',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }}>
-                  <div style={{ 
-                    width: '8px', 
-                    height: '8px', 
-                    borderRadius: '50%', 
-                    background: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? 'var(--accent)' : status.includes('Listening') ? '#3b82f6' : '#ef4444',
-                    boxShadow: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? '0 0 10px var(--accent)' : status.includes('Listening') ? '0 0 10px #3b82f6' : 'none',
-                    transition: 'all 0.3s ease'
-                  }} />
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '1px' }}>
-                    {status.includes('Connected') ? 'LIVE READY' : status.toUpperCase()}
-                  </span>
-                </div>
+                 {showStatus && (
+                   <div style={{ 
+                     position: 'absolute', 
+                     top: '2rem', 
+                     right: '2rem', 
+                     zIndex: 100,
+                     display: 'flex',
+                     alignItems: 'center',
+                     gap: '0.5rem',
+                     background: 'rgba(0,0,0,0.5)',
+                     padding: '0.5rem 1rem',
+                     borderRadius: '20px',
+                     backdropFilter: 'blur(10px)',
+                     border: '1px solid rgba(255,255,255,0.1)'
+                   }}>
+                     <div style={{ 
+                       width: '8px', 
+                       height: '8px', 
+                       borderRadius: '50%', 
+                       background: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? 'var(--accent)' : status.includes('Listening') ? '#3b82f6' : '#ef4444',
+                       boxShadow: (status.includes('Streaming') || status.includes('Signing') || status.includes('Connected')) ? '0 0 10px var(--accent)' : status.includes('Listening') ? '0 0 10px #3b82f6' : 'none',
+                       transition: 'all 0.3s ease'
+                     }} />
+                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '1px' }}>
+                       {status.includes('Connected') ? 'LIVE READY' : status.toUpperCase()}
+                     </span>
+                   </div>
+                 )}
                 <div className="view-port" style={{ flex: 1, background: "#000" }}>
                   <SkeletonPlayer
                     frames={frames}
@@ -1694,7 +1899,25 @@ const TranslatorPage = ({ addToHistory, user, fetchHistory }: any) => {
                       )}
                   </AnimatePresence>
                 </div>
-                <div className="flex justify-end items-center mt-4 px-2">
+                <div className="flex justify-between items-center mt-4 px-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.05)' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowStatus(!showStatus)}
+                    className="btn ghost"
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      color: showStatus ? 'var(--accent)' : 'var(--muted)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    title={showStatus ? "Hide Status" : "Show Status"}
+                  >
+                    <span>{showStatus ? "Hide Status" : "Show Status"}</span>
+                  </motion.button>
                   <div className="badge accent">
                     {format === "skeleton"
                       ? "AI SKELETON"
@@ -1827,8 +2050,8 @@ const DictionaryPage = () => {
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
-    const maxVisible = 7;
-    let start = Math.max(1, currentPage - 3);
+    const maxVisible = typeof window !== "undefined" && window.innerWidth < 768 ? 4 : 7;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(totalPages, start + maxVisible - 1);
     if (end === totalPages) start = Math.max(1, end - maxVisible + 1);
     return (
@@ -1840,15 +2063,18 @@ const DictionaryPage = () => {
           </strong>{" "}
           of <strong>{filteredData.length}</strong>
         </p>
-        <div className="flex gap-2">
-          {currentPage > 1 && (
-            <button
-              className="btn ghost"
-              onClick={() => setCurrentPage((prev) => prev - 1)}
-            >
-              Prev
-            </button>
-          )}
+        <div className="flex gap-2 pagination-row">
+          <button
+            className="btn ghost"
+            onClick={() => currentPage > 1 && setCurrentPage((prev) => prev - 1)}
+            disabled={currentPage === 1}
+            style={{
+              opacity: currentPage === 1 ? 0.3 : 1,
+              cursor: currentPage === 1 ? "not-allowed" : "pointer",
+            }}
+          >
+            Prev
+          </button>
           {Array.from({ length: end - start + 1 }).map((_, i) => (
             <button
               key={start + i}
@@ -1859,14 +2085,17 @@ const DictionaryPage = () => {
               {start + i}
             </button>
           ))}
-          {currentPage < totalPages && (
-            <button
-              className="btn ghost"
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-            >
-              Next
-            </button>
-          )}
+          <button
+            className="btn ghost"
+            onClick={() => currentPage < totalPages && setCurrentPage((prev) => prev + 1)}
+            disabled={currentPage === totalPages}
+            style={{
+              opacity: currentPage === totalPages ? 0.3 : 1,
+              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+            }}
+          >
+            Next
+          </button>
         </div>
       </div>
     );
@@ -1878,14 +2107,14 @@ const DictionaryPage = () => {
       className="container"
       style={{ padding: "4rem 0" }}
     >
-      <div className="flex justify-between items-end mb-12">
+      <div className="flex justify-between items-end mb-12 dictionary-header">
         <div>
           <h1 style={{ fontSize: "3rem", fontWeight: 800 }}>
             FSL <span style={{ color: "var(--accent)" }}>Dictionary</span>
           </h1>
         </div>
-        <div className="flex gap-4 items-center">
-          <div className="settings-group">
+         <div className="flex gap-4 items-center dictionary-controls">
+          <div className="settings-group" style={{ marginBottom: 0 }}>
             <label className="settings-label">FILTER</label>
             <select
               value={filterCategory}
@@ -1899,7 +2128,7 @@ const DictionaryPage = () => {
               ))}
             </select>
           </div>
-          <div className="settings-group">
+          <div className="settings-group" style={{ marginBottom: 0 }}>
             <label className="settings-label">SORT</label>
             <select
               value={sortBy}
@@ -2676,22 +2905,19 @@ const ResearchPage = () => (
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="text-center"
+          className="text-center team-card"
           style={{ padding: "1.5rem" }}
         >
-          <div
-            style={{
-              width: "60px",
-              height: "60px",
-              background: "var(--bg)",
-              borderRadius: "50%",
-              margin: "0 auto 1rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <User size={30} opacity={0.3} />
+          <div className="team-avatar-container">
+            {m.image ? (
+              <img
+                src={m.image}
+                alt={m.name}
+                className="team-avatar-img"
+              />
+            ) : (
+              <User size={40} opacity={0.3} />
+            )}
           </div>
           <h4 style={{ fontSize: "0.9rem" }}>{m.name.split(",")[1]}</h4>
           <p

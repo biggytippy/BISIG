@@ -7,10 +7,10 @@ export const DESIGN_STYLES = [
 ];
 
 export const TEAM_MEMBERS = [
-  { name: 'Bughaw, Karl Benjamin', role: 'Lead Developer' },
-  { name: 'Sanchez, Lennon', role: 'AI Researcher' },
-  { name: 'Azuela, Benz', role: 'UI/UX Designer' },
-  { name: 'Habitan, Suzanne', role: 'Data Specialist' }
+  { name: 'Bughaw, Karl Benjamin', role: 'Lead Developer', image: '/karl.jpg' },
+  { name: 'Sanchez, Lennon', role: 'AI Researcher', image: '/lennon.png' },
+  { name: 'Azuela, Benz', role: 'UI/UX Designer', image: '/benz.png' },
+  { name: 'Habitan, Suzanne', role: 'UI/UX Designer', image: '/suzanne.png' }
 ];
 
 export const FEATURES = [
