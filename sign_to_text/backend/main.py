@@ -159,7 +159,7 @@ async def websocket_match(websocket: WebSocket):
                 # Signal frontend to capture images
                 await websocket.send_json({"type": "config_ack", "use_llm": True})
                 
-                new_url = data.get("colab_url")
+                new_url = data.get("colab_url") or data.get("colabUrl")
                 if new_url and (not qwen_matcher or qwen_matcher.colab_url != new_url):
                     qwen_matcher = QwenMatcher(new_url)
                     save_persisted_url(new_url)

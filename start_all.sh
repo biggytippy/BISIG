@@ -12,6 +12,15 @@ cleanup() {
 # Trap Ctrl+C (SIGINT) and SIGTERM
 trap cleanup SIGINT SIGTERM
 
+# Clean up any existing processes on our service ports to prevent "Address already in use" errors
+echo "Checking and cleaning up any stale background services on ports 8000, 8005, 8080, 3001, 5173..."
+for port in 8000 8005 8080 3001 5173; do
+    if lsof -t -i:$port >/dev/null 2>&1; then
+        echo "Killing stale process on port $port..."
+        kill -9 $(lsof -t -i:$port) 2>/dev/null || true
+    fi
+done
+
 echo "Initializing BISIG ecosystem installation checks and service runner..."
 
 # 1. Install system library dependencies if missing

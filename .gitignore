@@ -85,3 +85,6 @@ FSL-Datasets/api.log
 package.json
 package-lock.json
 
+# --- Laboratory Work ---
+# labs/
+labs/module-1/bisig_report.md

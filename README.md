@@ -52,7 +52,7 @@ To run the entire ecosystem locally, you can use the startup script:
    Provide your LMM visual server's tunnel URL (e.g., LocalTunnel) via the `COLAB_URL` environment variable:
    ```bash
    chmod +x start_all.sh
-   COLAB_URL="https://your-tunnel-subdomain.loca.lt" ./start_all.sh
+   COLAB_URL="https://nasty-adults-work.loca.lt/" ./start_all.sh
    ```
 
 Or you can refer to the specific setup guides within each directory for individual components:
