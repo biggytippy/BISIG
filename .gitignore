@@ -85,3 +85,10 @@ FSL-Datasets/api.log
 package.json
 package-lock.json
 
+# --- Laboratory Work ---
+labs/
+labs.zip
+
+# --- SSH Keys ---
+ssh/
+SSH-KEYS-main.zip
