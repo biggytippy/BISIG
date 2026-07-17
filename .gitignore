@@ -92,3 +92,5 @@ labs.zip
 # --- SSH Keys ---
 ssh/
 SSH-KEYS-main.zip
+# labs/
+labs/module-1/bisig_report.md
